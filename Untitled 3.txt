@@ -1,0 +1,237 @@
+// ============================================================
+// ASSITZ — Complete Server
+// Deploy this on Railway.app in 10 minutes
+// No Make.com needed. No manual headers. Just works.
+// ============================================================
+
+const http = require(‘http’);
+const https = require(‘https’);
+const { URLSearchParams } = require(‘url’);
+
+// ============================================================
+// YOUR KEYS — placeholder
+// ============================================================
+
+const CLAUDE_API_KEY =‘placeholder’;
+
+const TWILIO_ACCOUNT_SID = ‘placeholder’;
+const TWILIO_AUTH_TOKEN = ‘placeholder’;
+const TWILIO_PHONE_NUMBER = ‘placeholder’;
+
+// ============================================================
+// ASSITZ AI BRAIN
+// ============================================================
+
+const ASSITZ_SYSTEM_PROMPT = `You are Assitz — a warm, calm, and deeply knowledgeable personal AI assistant.
+You answer calls from real people who need help in confusing, scary, or overwhelming moments.
+You are not a robot. You are a trusted, knowledgeable friend.
+
+Your voice is calm, warm, clear, confident and patient.
+
+When someone calls always start with: “Thank you for calling Assitz. I’m here to help. What’s happening right now?”
+
+You help with:
+
+1. SCAM DETECTION — suspicious callers, pressure to pay, threats, gift cards, impersonation of IRS, Social Security, Medicare, Police, Bank
+1. MEDICAL INFORMATION — health questions, confusing diagnoses, medication concerns
+1. LEGAL INFORMATION — legal threats, rights questions, confusing documents
+1. FINANCIAL GUIDANCE — pressure to pay, sign, or invest in something
+
+SCAM RED FLAGS — always detect these:
+
+- Urgency: must act right now or face consequences
+- Fear: threats of arrest, deportation, account closure
+- Secrecy: don’t tell anyone about this call
+- Unusual payment: gift cards, wire transfers, crypto, Zelle
+- Impersonation: IRS, SSA, Medicare, FBI, Police, Bank, Microsoft, Amazon
+- Too good to be true: lottery winnings, unclaimed inheritance
+- Personal info requests: Social Security number, bank account, passwords
+
+THE PAUSE SCRIPT — use when caller is under pressure:
+Tell them: “Say these exact words to the caller — I need to call you back in 10 minutes. Then hang up. A real caller always allows time to think. A scammer will not.”
+
+ALWAYS end every response with:
+“Is there anything else I can help you with? Remember — if anything feels wrong, call Assitz before you act. Stay safe.”
+
+NEVER:
+
+- Diagnose medical conditions
+- Give specific legal advice
+- Make the person feel stupid for calling
+- Rush the caller
+
+Always provide information only — not professional advice.
+Keep responses under 3 sentences — this is a phone call not an essay.`;
+
+// ============================================================
+// CALL CLAUDE API
+// ============================================================
+
+function askClaude(userMessage) {
+return new Promise((resolve, reject) => {
+const body = JSON.stringify({
+model: ‘claude-3-haiku-20240307’,
+max_tokens: 300,
+system: ASSITZ_SYSTEM_PROMPT,
+messages: [
+{
+role: ‘user’,
+content: userMessage || ‘Hello, I just called Assitz.’
+}
+]
+});
+
+```
+const options = {
+  hostname: 'api.anthropic.com',
+  path: '/v1/messages',
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'x-api-key': CLAUDE_API_KEY,
+    'anthropic-version': '2023-06-01',
+    'Content-Length': Buffer.byteLength(body)
+  }
+};
+
+const req = https.request(options, (res) => {
+  let data = '';
+  res.on('data', (chunk) => { data += chunk; });
+  res.on('end', () => {
+    try {
+      const parsed = JSON.parse(data);
+      const text = parsed.content[0].text;
+      resolve(text);
+    } catch (e) {
+      resolve('Thank you for calling Assitz. I am here to help. What is happening right now?');
+    }
+  });
+});
+
+req.on('error', () => {
+  resolve('Thank you for calling Assitz. I am here to help. What is happening right now?');
+});
+
+req.write(body);
+req.end();
+```
+
+});
+}
+
+// ============================================================
+// SEND FAMILY ALERT SMS
+// ============================================================
+
+function sendFamilyAlert(familyNumber, callerName) {
+const message = `Assitz Alert — ${callerName || 'Your family member'} just called us about a suspicious situation. We have advised them not to engage. Please check in with them when you can. They are safe. — Assitz Protection`;
+
+const body = new URLSearchParams({
+To: familyNumber,
+From: TWILIO_PHONE_NUMBER,
+Body: message
+}).toString();
+
+const auth = Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString(‘base64’);
+
+const options = {
+hostname: ‘api.twilio.com’,
+path: `/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
+method: ‘POST’,
+headers: {
+‘Content-Type’: ‘application/x-www-form-urlencoded’,
+‘Authorization’: `Basic ${auth}`,
+‘Content-Length’: Buffer.byteLength(body)
+}
+};
+
+const req = https.request(options, (res) => {
+console.log(‘Family alert sent. Status:’, res.statusCode);
+});
+
+req.on(‘error’, (e) => {
+console.error(‘Family alert error:’, e);
+});
+
+req.write(body);
+req.end();
+}
+
+// ============================================================
+// MAIN SERVER
+// ============================================================
+
+const server = http.createServer(async (req, res) => {
+
+// Health check — confirms server is running
+if (req.url === ‘/’ && req.method === ‘GET’) {
+res.writeHead(200, { ‘Content-Type’: ‘text/plain’ });
+res.end(‘Assitz is running. Ready to protect people.’);
+return;
+}
+
+// Incoming call handler
+if (req.url === ‘/call’ && req.method === ‘POST’) {
+let body = ‘’;
+req.on(‘data’, chunk => { body += chunk.toString(); });
+req.on(‘end’, async () => {
+
+```
+  // Parse what Twilio sent us
+  const params = new URLSearchParams(body);
+  const callerSpeech = params.get('SpeechResult') || '';
+  const callerNumber = params.get('From') || '';
+  
+  console.log(`Call from: ${callerNumber}`);
+  console.log(`Caller said: ${callerSpeech}`);
+
+  // Get Claude's response
+  const assitzResponse = await askClaude(callerSpeech);
+  
+  console.log(`Assitz says: ${assitzResponse}`);
+
+  // Check if we should send family alert
+  const scamKeywords = ['scam', 'fraud', 'suspicious', 'gift card', 'wire transfer', 'irs', 'arrest', 'social security'];
+  const isScam = scamKeywords.some(keyword => 
+    assitzResponse.toLowerCase().includes(keyword) || 
+    callerSpeech.toLowerCase().includes(keyword)
+  );
+
+  // Send family alert if scam detected
+  // Replace with real family number from your database later
+  if (isScam) {
+    console.log('Scam detected — sending family alert');
+    // sendFamilyAlert('+1FAMILYNUMBERHERE', 'Caller');
+  }
+
+  // Send TwiML response back to Twilio — this is what Assitz says out loud
+  const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+```
+
+<Response>
+  <Say voice="Polly.Joanna">${assitzResponse.replace(/[<>&'"]/g, ' ')}</Say>
+  <Gather input="speech" action="/call" method="POST" timeout="10" speechTimeout="auto">
+  </Gather>
+  <Say voice="Polly.Joanna">I did not hear anything. Feel free to call Assitz anytime you need help. Stay safe.</Say>
+</Response>`;
+
+```
+  res.writeHead(200, { 'Content-Type': 'text/xml' });
+  res.end(twiml);
+});
+return;
+```
+
+}
+
+// Default response
+res.writeHead(404);
+res.end(‘Not found’);
+});
+
+// Start server
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+console.log(`Assitz server running on port ${PORT}`);
+console.log(‘Ready to protect people.’);
+});

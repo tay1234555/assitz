@@ -1,0 +1,12 @@
+{
+  "name": "assitz",
+  "version": "1.0.0",
+  "description": "Assitz — Personal AI Protection",
+  "main": "assitz-server.js",
+  "scripts": {
+    "start": "node assitz-server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
