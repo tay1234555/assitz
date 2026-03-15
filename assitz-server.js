@@ -75,7 +75,8 @@ const server = http.createServer(function(req, res) {
     return;
   }
 
-  if (req.method === 'POST') {
+  if (req.method === 'POST' || req.url === '/call') {
+
     parseBody(req).then(function(params) {
       const speech = params['SpeechResult'] || '';
       console.log('Caller said: ' + speech);
