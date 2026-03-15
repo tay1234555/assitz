@@ -4,7 +4,7 @@
 // No Make.com needed. No manual headers. Just works.
 // ============================================================
 
-const http = require(‘http’);
+const { URLSearchParams } require ('url');
 const https = require(‘https’);
 const { URLSearchParams } = require(‘url’);
 
